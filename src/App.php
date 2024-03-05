@@ -86,30 +86,39 @@ class App {
                 return;
             }
             $request = new Request();
+            $routerMatched = false; // flag to check if a router is matched ------------------------
             foreach (self::$stack as $path => $router) {
                 // Remove query parameter placeholders from route path if exists
                 // So that they can be placed in the route path without disturbing the route path matching
                 // Incoming request path is already stripped of query parameters, so we don't need to do that here
                 $path = preg_replace('/\/:\w+&\w+/', '', $path);
                 if (str_starts_with($request->path, $path)) {
+                    $routerMatched = true; // set flag to true if a router is matched
                     $routes = $router->getStack();
                     if (empty($routes)) {
-                        // No routes in matched router, return
-                        return;
+                        // No routes in matched router, serve static file and break out of the loop
+                        self::serveStaticFile($fullPathToStaticFolder, $request->path);
+                        break;
                     }
+                    $routeMatched = false; // flag to check if a route is matched ------------------
                     foreach ($routes as $route) {
                         if ($route->path === $request->path && $route->method === $request->method) {
                             // depending on is ajax passed to route to determine if request is ajax ($request->is_ajax)
                             $route->run($errorHandler);
-                        } else {
-                            self::serveStaticFile($fullPathToStaticFolder, $request->path);
+                            $routeMatched = true; // set flag to true if a route is matched
+                            break; /* Break out of the loop if a route is matched (IMPORTANT!) */
                         }
-                        break; /* Break out of the loop if a route is matched or a file is served (IMPORTANT!) */
                     }
-                } else {
-                    self::serveStaticFile($fullPathToStaticFolder, $request->path);
+                    if (!$routeMatched) {
+                        // No route is matched, serve static file
+                        self::serveStaticFile($fullPathToStaticFolder, $request->path);
+                        break; /* Break out of the loop if a file is served (IMPORTANT!) */
+                    }
                 }
-                break; /* Break out of the loop if a router is matched or a file is served (IMPORTANT!) */
+            }
+            if (!$routerMatched) {
+                // No router is matched, serve static file
+                self::serveStaticFile($fullPathToStaticFolder, $request->path);
             }
         } catch (Exception $e) {
             // depending on xmlhttprequest to determine if request is ajax ($request->is_ajax)
@@ -136,7 +145,7 @@ class App {
             throw $errorUtils->customError(
                 "FileNotFoundException",
                 "App",
-                "serveStaticFile",
+                "serveStaticFile | ".$fullPathToStaticFolder.$requestPath,
                 "Not Found",
                 404,
                 debug_backtrace()
