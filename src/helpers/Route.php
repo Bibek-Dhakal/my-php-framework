@@ -9,6 +9,7 @@ use Exception;
 class Route {
     public string $path; // The path of the route
     public string $method; // The HTTP method of the route
+    public bool $is_ajax; // is_ajax flag
     protected array $stack = []; // Stack of middleware functions
     protected int $currentIndex; // Current index in the middleware stack
     protected $errorHandler; // Error handler callable
@@ -21,9 +22,10 @@ class Route {
      * @param array  $middlewares  An array of middleware functions.
      * @throws InvalidArgumentException If any non-callable item is passed.
      */
-    public function __construct(string $path, string $method, array $middlewares) {
+    public function __construct(string $path, string $method, bool $is_ajax, array $middlewares) {
         $this->path = $path;
         $this->method = $method;
+        $this->is_ajax = $is_ajax;
         $this->currentIndex = 0;
         foreach ($middlewares as $middleware) {
             if (is_callable($middleware)) {
@@ -70,7 +72,7 @@ class Route {
             if (!empty((array) $error) ?? false) {
                 // Error object is not empty
                 if (is_callable($this->errorHandler)) {
-                    call_user_func($this->errorHandler, $error);
+                    call_user_func($this->errorHandler, $error, $this->is_ajax);
                 }
             } else {
                 // Error object is empty
@@ -84,5 +86,6 @@ class Route {
     }
 
 }
+
 
 

@@ -28,7 +28,12 @@ class App {
      * @param callable[] $middlewares An array of middleware functions to be executed for the route.
      * @throws InvalidArgumentException If any non-callable item is passed as middleware.
      */
-    public static function addRoute(string $path, string $method, array $middlewares): void {
+    public static function addRoute(
+         $path,
+         string $method,
+         bool $is_ajax,
+         array $middlewares
+         ): void {
         $callableMiddlewares = [];
         foreach ($middlewares as $middleware) {
             if (!is_callable($middleware)) {
@@ -38,7 +43,7 @@ class App {
             $callableMiddlewares[] = $middleware;
         }
         $router = new Router();
-        $router->addRoute($path, $method, $callableMiddlewares);
+        $router->addRoute($path, $method, $is_ajax, $callableMiddlewares);
         self::addRouter($path, $router);
     }
 
@@ -88,6 +93,7 @@ class App {
                     }
                     foreach ($routes as $route) {
                         if ($route->path === $request->path && $route->method === $request->method) {
+                            // depending on is ajax passed to route to determine if request is ajax ($request->is_ajax)
                             $route->run($errorHandler);
                         } else {
                             self::serveStaticFile($fullPathToStaticFolder, $request->path);
@@ -100,7 +106,8 @@ class App {
                 break; /* Break out of the loop if a router is matched or a file is served (IMPORTANT!) */
             }
         } catch (Exception $e) {
-            $errorHandler($e);
+            // depending on xmlhttprequest to determine if request is ajax ($request->is_ajax)
+            $errorHandler($e, $request->is_ajax);
         }
     }
 
@@ -150,6 +157,46 @@ class App {
                 404,
                 debug_backtrace()
             );
+        }
+    }
+
+    /**
+     * Retrieves an instance of Request.
+     * (Factory method for manufacturing incoming request data bearer Class instance)
+     *
+     * @return Request The Request instance.
+     */
+    public static function request(): Request {
+        return new Request();
+    }
+
+    /**
+     * Handles the response by sending the appropriate headers and response  or file 
+     * based on ajax and non-ajax request (check renderYourViewsFile for non-ajax request)
+     *
+     * @param mixed  $response         The response to be sent.
+     * @param callable $renderYourViewsFile The function to render your views file.
+     * @return void
+     * @throws Exception If the response is not a valid type. (type hinting is used to ensure the response is a valid type)
+     *
+     * --------- in views file, $responseData is the response object ----------
+     */
+    public static function handleResponse(
+        $response = null,
+        callable $renderYourViewsFile = null,
+        ): void {
+        if (!is_null($renderYourViewsFile) && is_callable($renderYourViewsFile)) {
+             $renderYourViewsFile($response);
+        } else {
+            if(is_string($response)) {
+                echo $response;
+            } else if(is_array($response)) {
+                echo json_encode($response);
+            } else if(is_object($response)) {
+                echo json_encode($response);
+            } else {
+                throw new Exception('Invalid response type.');
+            }
         }
     }
 

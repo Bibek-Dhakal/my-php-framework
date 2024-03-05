@@ -15,7 +15,7 @@ class Router {
      * @param callable[] $middlewares An array of middleware functions.
      * @throws InvalidArgumentException If any non-callable item is passed.
      */
-    public function addRoute(string $path, string $method, array $middlewares): void {
+    public function addRoute(string $path, string $method, bool $is_ajax, array $middlewares): void {
         $callableMiddlewares = [];
         foreach ($middlewares as $middleware) {
             if (!is_callable($middleware)) {
@@ -24,7 +24,7 @@ class Router {
             }
             $callableMiddlewares[] = $middleware;
         }
-        $route = new Route($path, $method, $callableMiddlewares);
+        $route = new Route($path, $method, $is_ajax, $callableMiddlewares);
         $this->stack[] = $route;
     }
 

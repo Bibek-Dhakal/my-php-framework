@@ -2,6 +2,10 @@
 namespace Bibek8366\MyPhpApp\Helpers;
 use Exception;
 use Error;
+/**
+ErrorUtils class provides methods to handle errors and create custom error objects.
+Note: If using ajax, must set the header 'HTTP_X_REQUESTED_WITH' to 'xmlhttprequest' in the request.
+*/
 class ErrorUtils {
     /**
      * Creates a custom error object.
@@ -38,9 +42,18 @@ class ErrorUtils {
      * @param Error | Exception $e   The exception object.
      * @param string    $env The environment mode (e.g., 'prod', 'dev').
      */
-    public function handleError(Error | Exception $e, string $env): void {
+    public function handleError(
+        Error | Exception $e,
+        string $env = 'dev',
+        bool $is_ajax = false,
+        callable $renderYourProdErrorPagesForNonAjaxREquest = null
+        ): void {
         $errorResponse = self::formatErrorResponse($e, $env);
-        self::respondWithError($errorResponse, $e);
+        self::respondWithError($errorResponse, $e, $is_ajax, $renderYourProdErrorPagesForNonAjaxREquest);
+        // instance of Error or Exception can also be passed as argument
+        // Error is the base class for all internal PHP errors.
+        // Exception is the base class for all user-defined exceptions.
+        // CustomError which is instance of class that extends exception also be passed as argument.
     }
 
     private function formatErrorResponse(Error | Exception $e, string $env): array {
@@ -64,11 +77,13 @@ class ErrorUtils {
         return $errorResponse;
     }
 
-    private function respondWithError(array $errorResponse, Error | Exception $e): void {
+    private function respondWithError(
+        array $errorResponse,
+        Error | Exception $e,
+        bool $is_ajax,
+        callable $renderYourProdErrorPageForNonAjaxREquest = null
+        ): void {
        http_response_code($errorResponse['statusCode']);
-       /* Relies on the presence of the HTTP_X_REQUESTED_WITH header in the request ------ */
-       $is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH'])
-       && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
         if (isset($errorResponse['stackTrace'])) {
             // dev mode
             $errorResponse['backTrace'] = $errorResponse['backTrace'] ?? debug_backtrace();
@@ -78,16 +93,13 @@ class ErrorUtils {
             } else {
                 self::devErrorStyles();
                 echo "<h2>Request</h2>";
-                echo $_SERVER['REQUEST_URI'];
-                echo " , ";
-                echo $_SERVER['REQUEST_METHOD'];
-                echo " , ";
-                echo "QUERY PARAMS:";
-                echo json_encode($_GET, JSON_PRETTY_PRINT);
-                echo " , ";
-                echo "BODY:";
-                echo " ,";
-                echo json_encode($_POST, JSON_PRETTY_PRINT);
+                echo "URI: ".$_SERVER['REQUEST_URI']."<br>";
+                echo "METHOD: ".$_SERVER['REQUEST_METHOD']."<br>";
+                echo "Query Params: ".json_encode($_GET, JSON_PRETTY_PRINT)."<br>";
+                echo "Body: ".json_encode($_POST, JSON_PRETTY_PRINT)."<br><br>";
+                echo "Note:<br>";
+                echo "In query params, 1st key: value is uri, others are query params<br>";
+                echo "For GET request, body is empty";
                 echo "<h2>Error</h2>";
                 echo "<pre><code>".json_encode($errorResponse, JSON_PRETTY_PRINT)."</code></pre>";
                 echo "<h2>Stacktrace as string</h2>";
@@ -96,10 +108,17 @@ class ErrorUtils {
         } else {
             // prod mode
             if ($is_ajax) {
-              echo json_encode($errorResponse, JSON_PRETTY_PRINT);
-            } else {
-              echo "<h1>{$errorResponse['statusCode']}</h1>";
-              echo "<p>{$errorResponse['message']}</p>";
+              echo json_encode($errorResponse);
+            }
+            else {
+              if($renderYourProdErrorPageForNonAjaxREquest !== null
+              && is_callable($renderYourProdErrorPageForNonAjaxREquest)) {
+               call_user_func($renderYourProdErrorPageForNonAjaxREquest, $errorResponse);
+              }
+              else {
+               echo "<h1>{$errorResponse['statusCode']}</h1>";
+               echo "<p>{$errorResponse['message']}</p>";
+              }
             }
         }
     }
@@ -160,5 +179,6 @@ class CustomError extends Exception {
         return $this->backtrace;
     }
 }
+
 
 
