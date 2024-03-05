@@ -1,0 +1,27 @@
+{
+    "name": "bibek8366/my-php-app",
+    "description": "A powerful and flexible library for building PHP based web applications.",
+    "type": "library",
+    "require": {
+        "cloudinary/cloudinary_php": "^2.12",
+        "stripe/stripe-php": "^13.13",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Bibek8366\\MyPhpApp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Bibek Dhakal",
+            "email": "dhakalaswin8366@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "scripts": {
+        "testServer": "php -S localhost:5000 -t tests/"
+    }
+}
+
