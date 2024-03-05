@@ -1,5 +1,5 @@
 <?php
-namespace MyPhpApp\Helpers;
+namespace Bibek8366\MyPhpApp\Helpers;
 use Exception;
 use Error;
 class ErrorUtils {

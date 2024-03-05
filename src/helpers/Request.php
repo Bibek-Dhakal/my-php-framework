@@ -1,5 +1,5 @@
 <?php
-namespace MyPhpApp\Helpers;
+namespace Bibek8366\MyPhpApp\Helpers;
 /**
  * Represents an HTTP request received by the server.
  */

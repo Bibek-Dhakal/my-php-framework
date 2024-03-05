@@ -1,5 +1,5 @@
 <?php
-namespace MyPhpApp\Helpers;
+namespace Bibek8366\MyPhpApp\Helpers;
 use InvalidArgumentException;
 /**
  * Handles routing by managing a stack of routes with middleware.

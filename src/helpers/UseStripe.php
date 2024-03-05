@@ -1,5 +1,5 @@
 <?php
-namespace MyPhpApp\Helpers;
+namespace Bibek8366\MyPhpApp\Helpers;
 include 'vendor/autoload.php';
 use stripe\StripeClient;
 use stripe\Webhook;

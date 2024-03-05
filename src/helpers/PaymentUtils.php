@@ -1,5 +1,5 @@
 <?php
-namespace MyPhpApp\Helpers;
+namespace Bibek8366\MyPhpApp\Helpers;
 /**
  * Utility class for handling various payment methods.
  */

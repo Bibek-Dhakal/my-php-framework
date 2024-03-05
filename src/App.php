@@ -1,17 +1,17 @@
 <?php
 // App.php
-namespace MyPhpApp;
+namespace Bibek8366\MyPhpApp;
 use Exception;
 use InvalidArgumentException;
-use MyPhpApp\Helpers\Request;
-use MyPhpApp\Helpers\Router;
-use MyPhpApp\Helpers\ValidationUtils;
-use MyPhpApp\Helpers\ErrorUtils;
-use MyPhpApp\Helpers\CustomError;
-use MyPhpApp\Helpers\DbUtils;
-use MyPhpApp\Helpers\FileUtils;
-use MyPhpApp\Helpers\MailUtils;
-use MyPhpApp\Helpers\PaymentUtils;
+use Bibek8366\MyPhpApp\Helpers\Request;
+use Bibek8366\MyPhpApp\Helpers\Router;
+use Bibek8366\MyPhpApp\Helpers\ValidationUtils;
+use Bibek8366\MyPhpApp\Helpers\ErrorUtils;
+use Bibek8366\MyPhpApp\Helpers\CustomError;
+use Bibek8366\MyPhpApp\Helpers\DbUtils;
+use Bibek8366\MyPhpApp\Helpers\FileUtils;
+use Bibek8366\MyPhpApp\Helpers\MailUtils;
+use Bibek8366\MyPhpApp\Helpers\PaymentUtils;
 /**
  * The main application class responsible for bootstrapping the application, managing routes,
  * handling requests, and serving static files. Also provides access to utility classes.

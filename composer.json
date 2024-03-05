@@ -19,9 +19,6 @@
             "email": "dhakalaswin8366@gmail.com"
         }
     ],
-    "minimum-stability": "stable",
-    "scripts": {
-        "testServer": "php -S localhost:5000 -t tests/"
-    }
+    "minimum-stability": "stable"
 }
 
