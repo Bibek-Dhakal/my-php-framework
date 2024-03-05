@@ -15,6 +15,12 @@ use Bibek8366\MyPhpApp\Helpers\PaymentUtils;
 /**
  * The main application class responsible for bootstrapping the application, managing routes,
  * handling requests, and serving static files. Also provides access to utility classes.
+ *
+ * Note:-
+ * Beter give full paths to static folder and views folder and other paths
+ * __DIR__.'/path' or $_SERVER['DOCUMENT_ROOT'].'/path'
+ * / before path and no slash after path
+ *
  */
 class App {
     /** @var Router[] An associative array of route paths and their corresponding routers. */
@@ -152,7 +158,7 @@ class App {
             throw $errorUtils->customError(
                 "FileNotFoundException",
                 "App",
-                "serveStaticFile",
+                "serveStaticFile | ".$fullFilePath,
                 "Not Found",
                 404,
                 debug_backtrace()

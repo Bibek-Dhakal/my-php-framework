@@ -83,7 +83,7 @@ class ErrorUtils {
         bool $is_ajax,
         callable $renderYourProdErrorPageForNonAjaxREquest = null
         ): void {
-       http_response_code($errorResponse['statusCode']);
+       http_response_code($errorResponse['statusCode']); // set the HTTP status code
         if (isset($errorResponse['stackTrace'])) {
             // dev mode
             $errorResponse['backTrace'] = $errorResponse['backTrace'] ?? debug_backtrace();
