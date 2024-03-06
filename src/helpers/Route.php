@@ -44,15 +44,11 @@ class Route {
      * @throws Exception              If error handler is not a function.
      */
     public function run(callable $errorHandler): void {
+     try {
         if (empty($this->stack)) {
             return;
         }
-        if (is_callable($errorHandler)) {
-            $this->errorHandler = $errorHandler;
-        } else {
-            // Error will be handled when this method is called by the app bootstrap method
-            throw new Exception('Error handler is not a function');
-        }
+        $this->errorHandler = $errorHandler;
         if (is_callable($this->stack[$this->currentIndex])) {
             $next = $this->getNextFnDef();
             call_user_func($this->stack[$this->currentIndex], $next);
@@ -60,6 +56,9 @@ class Route {
             // Error will be handled when this method is called by the app bootstrap method
             throw new Exception('Middleware must be a callable');
         }
+     } catch (Exception $e) {
+        $errorHandler($e, $this->is_ajax);
+     }
     }
 
     /**

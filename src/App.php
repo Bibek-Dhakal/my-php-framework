@@ -5,6 +5,7 @@ use Exception;
 use InvalidArgumentException;
 use Bibek8366\MyPhpApp\Helpers\Request;
 use Bibek8366\MyPhpApp\Helpers\Router;
+use Bibek8366\MyPhpApp\Helpers\Route;
 use Bibek8366\MyPhpApp\Helpers\ValidationUtils;
 use Bibek8366\MyPhpApp\Helpers\ErrorUtils;
 use Bibek8366\MyPhpApp\Helpers\CustomError;
@@ -83,47 +84,40 @@ class App {
         try {
             // Skip bootstrapping if no routes are defined
             if (empty(self::$stack)) {
-                return;
+                exit;
             }
             $request = new Request();
-            $routerMatched = false; // flag to check if a router is matched ------------------------
-            foreach (self::$stack as $path => $router) {
-                // Remove query parameter placeholders from route path if exists
-                // So that they can be placed in the route path without disturbing the route path matching
-                // Incoming request path is already stripped of query parameters, so we don't need to do that here
-                $path = preg_replace('/\/:\w+&\w+/', '', $path);
-                if (str_starts_with($request->path, $path)) {
-                    $routerMatched = true; // set flag to true if a router is matched
-                    $routes = $router->getStack();
-                    if (empty($routes)) {
-                        // No routes in matched router, serve static file and break out of the loop
-                        self::serveStaticFile($fullPathToStaticFolder, $request->path);
-                        break;
-                    }
-                    $routeMatched = false; // flag to check if a route is matched ------------------
-                    foreach ($routes as $route) {
-                        if ($route->path === $request->path && $route->method === $request->method) {
-                            // depending on is ajax passed to route to determine if request is ajax ($request->is_ajax)
-                            $route->run($errorHandler);
-                            $routeMatched = true; // set flag to true if a route is matched
-                            break; /* Break out of the loop if a route is matched (IMPORTANT!) */
-                        }
-                    }
-                    if (!$routeMatched) {
-                        // No route is matched, serve static file
-                        self::serveStaticFile($fullPathToStaticFolder, $request->path);
-                        break; /* Break out of the loop if a file is served (IMPORTANT!) */
-                    }
-                }
-            }
-            if (!$routerMatched) {
-                // No router is matched, serve static file
-                self::serveStaticFile($fullPathToStaticFolder, $request->path);
+            $incomingPath = $request->path;
+            $incomingMethod = $request->method;
+            $matchedRoute = self::routeFound(self::$stack, $incomingPath, $incomingMethod);
+            if ($matchedRoute !== null) {
+                // If a route is found, execute the middleware and the route handler
+                $matchedRoute->run($errorHandler);
+            } else {
+                // If no route is found, serve the static file
+                self::serveStaticFile($fullPathToStaticFolder, $incomingPath);
             }
         } catch (Exception $e) {
             // depending on xmlhttprequest to determine if request is ajax ($request->is_ajax)
             $errorHandler($e, $request->is_ajax);
         }
+    }
+
+    private static function routeFound(array $stack, string $incomingPath, string $incomingMethod): ?Route {
+      foreach ($stack as $path => $router) {
+          if (strpos($incomingPath, $path) === 0) {
+              $currentRouter = $stack[$path];
+              foreach ($currentRouter->getStack() as $route) {
+                  if ($route->path === $incomingPath && $route->method === $incomingMethod) {
+                      return $route; // return the route if found
+                  }
+              }
+              // If no route matches, return null
+              return null;
+          }
+      }
+      // If no app stack key starts with the incoming path, return null
+      return null;
     }
 
     /**
@@ -158,6 +152,10 @@ class App {
             // Set appropriate headers
             header("Content-Type: " . mime_content_type($fullFilePath));
             header('Content-Length: ' . filesize($fullFilePath));
+            // Set content type for javascript files
+            if (strpos($fullFilePath, '.js') !== false || strpos($fullFilePath, '.mjs') !== false) {
+              header('Content-Type: application/javascript');
+            }
             // Output the file contents
             readfile($fullFilePath);
         } else {
@@ -189,12 +187,14 @@ class App {
      * Handles the response by sending the appropriate headers and response  or file 
      * based on ajax and non-ajax request (check renderYourViewsFile for non-ajax request)
      *
+     * this way we can pass data only in private scope to the view
+     * ensuring the global variables are not polluted or exposed to the view
+     *
      * @param mixed  $response         The response to be sent.
      * @param callable $renderYourViewsFile The function to render your views file.
      * @return void
      * @throws Exception If the response is not a valid type. (type hinting is used to ensure the response is a valid type)
      *
-     * --------- in views file, $responseData is the response object ----------
      */
     public static function handleResponse(
         $response = null,
@@ -204,10 +204,13 @@ class App {
              $renderYourViewsFile($response);
         } else {
             if(is_string($response)) {
+                http_response_code(200);
                 echo $response;
             } else if(is_array($response)) {
+                http_response_code(200);
                 echo json_encode($response);
             } else if(is_object($response)) {
+                http_response_code(200);
                 echo json_encode($response);
             } else {
                 throw new Exception('Invalid response type.');
