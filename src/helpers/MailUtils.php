@@ -29,6 +29,7 @@ class MailUtils {
         try {
             return new Mailer($mailHost, $mailUsername, $mailPassword, $appName, $appEmail);
         } catch (Exception $e) {
+            error_log("Could not create mailer. Error: {$e->getMessage()}"); // Log error
             throw new Exception("Could not create mailer. Error: {$e->getMessage()}");
         }
     }
@@ -92,6 +93,7 @@ class Mailer {
             $this->mail->Port       = 465;
             $this->mail->setFrom($appEmail, $appName);
         } catch (Exception $e) {
+            error_log("Could not initialize mailer. Error: {$this->mail->ErrorInfo}"); // Log error
             throw new Exception("Could not initialize mailer. Error: {$this->mail->ErrorInfo}");
         }
     }
@@ -120,6 +122,7 @@ class Mailer {
      */
     public function sendMail(array $mails): void {
         if (!isset($this->mail)) {
+            error_log("Mailer not initialized."); // Log error
             throw new Exception("Mailer not initialized.");
         }
         try {
@@ -132,6 +135,7 @@ class Mailer {
                 $this->mail->clearAddresses();
             }
         } catch (Exception $e) {
+            error_log("Could not send mail. Error: {$this->mail->ErrorInfo}"); // Log error
             throw new Exception("Could not send mail. Error: {$this->mail->ErrorInfo}");
         }
     }
@@ -156,6 +160,7 @@ class Mailer {
         try {
             $this->sendMail($mails);
         } catch (Exception $e) {
+            error_log("Could not send mail. Error: {$e->getMessage()}"); // Log error
             throw new Exception("Could not send mail. Error: {$e->getMessage()}");
         }
     }

@@ -49,6 +49,10 @@ class ErrorUtils {
         callable $renderYourProdErrorPagesForNonAjaxREquest = null
         ): void {
         $errorResponse = self::formatErrorResponse($e, $env);
+        $errorLog = $errorResponse;
+        $errorLog['backtrace'] = $errorResponse['backTrace'] ?? debug_backtrace();
+        // log the error response in server console
+        error_log(json_encode($errorLog, JSON_PRETTY_PRINT));
         self::respondWithError($errorResponse, $e, $is_ajax, $renderYourProdErrorPagesForNonAjaxREquest);
         // instance of Error or Exception can also be passed as argument
         // Error is the base class for all internal PHP errors.
@@ -83,7 +87,7 @@ class ErrorUtils {
         bool $is_ajax,
         callable $renderYourProdErrorPageForNonAjaxREquest = null
         ): void {
-       http_response_code($errorResponse['statusCode']); // set the HTTP status code
+        http_response_code($errorResponse['statusCode']); // set the HTTP status code
         if (isset($errorResponse['stackTrace'])) {
             // dev mode
             $errorResponse['backTrace'] = $errorResponse['backTrace'] ?? debug_backtrace();
@@ -179,6 +183,5 @@ class CustomError extends Exception {
         return $this->backtrace;
     }
 }
-
 
 

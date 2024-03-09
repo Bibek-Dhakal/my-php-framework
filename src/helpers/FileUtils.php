@@ -17,6 +17,7 @@ class FileUtils {
      */
     public function getPathsOfFilesAutoTempStoredByServerFromPOSTField(string $fieldName): array {
         if (!isset($_FILES[$fieldName])) {
+            error_log("No file provided for field: $fieldName");
             throw new Exception("No file provided for field: $fieldName");
         }
         $filePaths = array();
@@ -48,6 +49,7 @@ class FileUtils {
             $filename = basename($filePath);
             $destination = $FolderFullPath . '/' . $filename;
             if (!move_uploaded_file($filePath, $destination)) {
+                error_log("Failed to move file: $filename");
                 throw new Exception("Failed to move file: $filename");
             }
         }
@@ -64,6 +66,7 @@ class FileUtils {
         foreach ($filenames as $filename) {
             $filePath = $folderFullPath . '/' . $filename;
             if (!unlink($filePath)) {
+                error_log("Failed to delete file: $filename");
                 throw new Exception("Failed to delete file: $filename");
             }
         }
@@ -85,6 +88,7 @@ class FileUtils {
                 $filePath = $folderFullPath . '/' . $file;
                 if (is_file($filePath)) {
                     if (!unlink($filePath)) {
+                        error_log("Failed to delete file: $file");
                         throw new Exception("Failed to delete file: $file");
                     }
                 }

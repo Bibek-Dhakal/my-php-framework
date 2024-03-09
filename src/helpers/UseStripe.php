@@ -15,7 +15,13 @@ class UseStripe {
      * @return StripeClient An instance of StripeClient for making requests to Stripe.
      */
     public static function initializeStripe(string $stripeSecretKey): StripeClient {
-        return new StripeClient($stripeSecretKey);
+        try {
+            return new StripeClient($stripeSecretKey);
+        } catch (Exception $e) {
+            error_log("Stripe initialization error: " . $e->getMessage());
+            // caller should handle the exception
+            throw new Exception("Stripe initialization error: " . $e->getMessage());
+        }
     }
 
     /**
@@ -34,6 +40,7 @@ class UseStripe {
         string $cancelUrl,
         array $lineItems
     ): void {
+        try {
         $checkout_session = $stripe->checkout->sessions->create([
             'success_url' => "$successUrl?session_id={CHECKOUT_SESSION_ID}",
             'cancel_url' => $cancelUrl,
@@ -45,6 +52,11 @@ class UseStripe {
         ]);
         header("HTTP/1.1 303 See Other");
         header("Location: " . $checkout_session->url);
+     } catch (Exception $e) {
+        error_log("Error creating checkout session: " . $e->getMessage());
+        // caller should handle the exception
+        throw new Exception("Error creating checkout session: " . $e->getMessage());
+     }
     }
 
     /**
@@ -59,6 +71,7 @@ class UseStripe {
             $sessionId = $_GET['session_id'];
             return $stripe->checkout->sessions->retrieve($sessionId);
         } catch (Exception $e) {
+            error_log("Error retrieving checkout session: {$e->getMessage()}");
             // Caller should handle the exception
             throw new Exception("Error retrieving checkout session: {$e->getMessage()}");
         }

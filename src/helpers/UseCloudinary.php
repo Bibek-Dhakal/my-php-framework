@@ -21,6 +21,7 @@ class UseCloudinary {
         string $cloudinaryApiKey,
         string $cloudinaryApiSecret
     ): Cloudinary {
+        try {
         // Configure an instance of your Cloudinary cloud
        $cloudinary = new Cloudinary(
             array(
@@ -30,6 +31,11 @@ class UseCloudinary {
             )
         );
         return $cloudinary;
+        } catch (Exception $e) {
+            error_log("Cloudinary initialization error: " . $e->getMessage());
+            // caller should handle the exception ------------
+            throw new Exception("Cloudinary initialization error: " . $e->getMessage());
+        }
     }
 
     /**
@@ -54,6 +60,7 @@ class UseCloudinary {
                 "unique_filename" => true
               ));
             } catch (Exception $e) {
+              error_log("Cloudinary upload error: " . $e->getMessage());
               // caller should handle the exception ------------
               throw new Exception("Cloudinary upload error: " . $e->getMessage());
             }
@@ -74,6 +81,7 @@ class UseCloudinary {
             // Delete files from Cloudinary
             $cloudinary->adminApi()->deleteAssets($publicIds);
         } catch (Exception $e) {
+            error_log("Cloudinary delete error: " . $e->getMessage());
             // caller should handle the exception ------------
             throw new Exception("Cloudinary delete error: " . $e->getMessage());
         }
@@ -92,4 +100,5 @@ class UseCloudinary {
         return $publicIds;
     }
 }
+
 

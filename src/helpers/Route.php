@@ -31,6 +31,7 @@ class Route {
             if (is_callable($middleware)) {
                 $this->stack[] = $middleware;
             } else {
+                error_log('Non-callable item passed.');
                 // If any non-callable item is passed, throw an exception in IDE
                 throw new InvalidArgumentException('Non-callable item passed.');
             }
@@ -53,6 +54,7 @@ class Route {
             $next = $this->getNextFnDef();
             call_user_func($this->stack[$this->currentIndex], $next);
         } else {
+            error_log('Middleware must be a callable');
             // Error will be handled when this method is called by the app bootstrap method
             throw new Exception('Middleware must be a callable');
         }
@@ -85,6 +87,5 @@ class Route {
     }
 
 }
-
 
 

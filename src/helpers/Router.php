@@ -19,6 +19,7 @@ class Router {
         $callableMiddlewares = [];
         foreach ($middlewares as $middleware) {
             if (!is_callable($middleware)) {
+                error_log('Non-callable item passed.');
                 // If any non-callable item is passed, throw an exception
                 throw new InvalidArgumentException('Non-callable item passed.');
             }
