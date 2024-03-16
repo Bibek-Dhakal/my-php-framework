@@ -4,6 +4,7 @@ namespace Bibek8366\MyPhpApp\Helpers;
 use Exception;
 
 /**
+ * @class FileUtils
  * Utility class for handling file operations.
  */
 class FileUtils {
@@ -99,7 +100,7 @@ class FileUtils {
 
     /**
      * Returns an instance of the UseCloudinary class for interacting with Cloudinary services.
-     *
+     * @method useCloudinary
      * @return UseCloudinary  An instance of the UseCloudinary class.
      */
     public function useCloudinary(): UseCloudinary {

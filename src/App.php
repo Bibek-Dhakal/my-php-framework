@@ -8,6 +8,8 @@ use Bibek8366\MyPhpApp\Helpers\Router;
 use Bibek8366\MyPhpApp\Helpers\Route;
 use Bibek8366\MyPhpApp\Helpers\ValidationUtils;
 use Bibek8366\MyPhpApp\Helpers\ErrorUtils;
+use Bibek8366\MyPhpApp\Helpers\SuccessUtils;
+use Bibek8366\MyPhpApp\Helpers\ViewConfig;
 use Bibek8366\MyPhpApp\Helpers\CustomError;
 use Bibek8366\MyPhpApp\Helpers\DbUtils;
 use Bibek8366\MyPhpApp\Helpers\FileUtils;
@@ -153,8 +155,9 @@ class App {
      string $requestPath,
      array $extraMimeTypes = []
     ): void {
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
       // Check if the request path has an extension
-      if (!pathinfo($requestPath, PATHINFO_EXTENSION)) {
+      if (!pathinfo($requestPath, PATHINFO_EXTENSION) || $requestMethod != 'GET') {
         // If no extension, file is not found
         $errorUtils = new ErrorUtils();
         $filePath = htmlspecialchars($requestPath);
@@ -238,47 +241,6 @@ class App {
     }
 
     /**
-     * Handles the response by sending the appropriate headers and response  or file 
-     * based on ajax and non-ajax request (check renderYourViewsFile for non-ajax request)
-     *
-     * this way we can pass data only in private scope to the view
-     * ensuring the global variables are not polluted or exposed to the view
-     *
-     * @param mixed  $response         The response to be sent.
-     * @param callable $renderYourViewsFile The function to render your views file.
-     * @return void
-     * @throws Exception If the response is not a valid type. (type hinting is used to ensure the response is a valid type)
-     *
-     */
-    public static function handleResponse(
-        $response = null,
-        callable $renderYourViewsFile = null,
-        ): void {
-        try{
-        if (!is_null($renderYourViewsFile) && is_callable($renderYourViewsFile)) {
-             $renderYourViewsFile($response);
-        } else {
-            if(is_string($response)) {
-                http_response_code(200);
-                echo $response;
-            } else if(is_array($response)) {
-                http_response_code(200);
-                echo json_encode($response);
-            } else if(is_object($response)) {
-                http_response_code(200);
-                echo json_encode($response);
-            } else {
-                error_log('Invalid response type.');
-                throw new Exception('Invalid response type.');
-            }
-        }
-       } catch(Exception $e) {
-              error_log('error in handleResponse: ' . $e->getMessage());
-            throw new Exception('error in handleResponse: ' . $e->getMessage());
-       }
-    }
-
-    /**
      * Retrieves an instance of ErrorUtils.
      *
      * @return ErrorUtils The ErrorUtils instance.
@@ -287,6 +249,25 @@ class App {
         return new ErrorUtils();
     }
 
+    /**
+     * Retrieves an instance of SuccessUtils.
+     *
+     * @return SuccessUtils The SuccessUtils instance.
+     */
+    public static function successUtils(): SuccessUtils {
+        return new SuccessUtils();
+    }
+
+    /**
+     * Retrieves an instance of ViewConfig.
+     *
+     * @param string $fullPathToViewsDir The full path to the views directory.
+     * @return ViewConfig The ViewConfig instance.
+     */
+    public static function viewConfig(string $fullPathToViewsDir): ViewConfig {
+        return new ViewConfig($fullPathToViewsDir);
+    }
+    
     /**
      * Retrieves an instance of FileUtils.
      *

@@ -10,7 +10,7 @@ use Exception;
 class UseCloudinary {
     /**
      * Initializes Cloudinary with the provided credentials.
-     *
+     * @method initializeCloudinary
      * @param string $cloudinaryName    The Cloudinary account name.
      * @param string $cloudinaryApiKey  The Cloudinary API key.
      * @param string $cloudinaryApiSecret  The Cloudinary API secret key.
@@ -40,30 +40,35 @@ class UseCloudinary {
 
     /**
      * Uploads files to Cloudinary.
-     *
+     * @method uploadToCloudinary
      * @param Cloudinary $cloudinary        An instance of Cloudinary.
      * @param array  $filePaths             An array of file paths to be uploaded.
      * @param string $cloudinaryFolder      The Cloudinary folder to upload the files to.
+     * @return array                        An array of uploaded file data.
      * @throws Exception                    If file upload to Cloudinary fails.
      */
     public function uploadToCloudinary(
         Cloudinary $cloudinary,
         array $filePaths,
         string $cloudinaryFolder
-    ): void {
-        foreach($filePaths as $filePath) {
-            try {
+    ): array {
+        $urls = array();
+        try {
+          foreach($filePaths as $filePath) {
               // Upload file to Cloudinary
-              $cloudinary->uploadApi()->upload($filePath, array(
+              $response = $cloudinary->uploadApi()->upload($filePath, array(
                 "folder" => $cloudinaryFolder,
                 "use_filename" => true,
                 "unique_filename" => true
               ));
-            } catch (Exception $e) {
-              error_log("Cloudinary upload error: " . $e->getMessage());
-              // caller should handle the exception ------------
-              throw new Exception("Cloudinary upload error: " . $e->getMessage());
-            }
+                $urls[] = $response['secure_url'];
+          }
+          return $urls;
+        }
+        catch (Exception $e) {
+          error_log("Cloudinary upload error: " . $e->getMessage());
+          // caller should handle the exception ------------
+          throw new Exception("Cloudinary upload error: " . $e->getMessage());
         }
     }
 

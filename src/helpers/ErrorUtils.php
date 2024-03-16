@@ -46,7 +46,7 @@ class ErrorUtils {
         Error | Exception $e,
         string $env = 'dev',
         bool $is_ajax = false,
-        callable $renderYourProdErrorPagesForNonAjaxREquest = null
+        ?callable $renderYourProdErrorPagesForNonAjaxREquest = null
         ): void {
         $errorResponse = self::formatErrorResponse($e, $env);
         $errorLog = $errorResponse;

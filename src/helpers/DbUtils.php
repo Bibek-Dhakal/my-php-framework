@@ -73,17 +73,6 @@ class DbUtils {
         return ($page - 1) * $limit;
     }
 
-    public function getTotalRowsCount($pdo, $table): int {
-    $stmt = $pdo->query("SELECT COUNT(*) FROM $table");
-    return (int) $stmt->fetchColumn();
-    }
-
-    public function getFilteredRowsCount($pdo, $table, $sql, $params): int {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM $table WHERE $sql");
-    $stmt->execute($params);
-    return (int) $stmt->fetchColumn();
-    }
-
     /**
      * Get the total number of pages for pagination.
      *
@@ -97,7 +86,7 @@ class DbUtils {
 
     // Model FACTORY METHOD --------------------------------------------
     public function model(PDO $pdo, string $table): Model {
-        return new Model($table, $pdo);
+        return new Model($pdo, $table);
     }
 
 }
@@ -110,24 +99,59 @@ class Model {
     protected PDO $pdo;
     protected string $table;
 
-    public function __construct($pdo, $table) {
+    public function __construct(PDO $pdo, string $table) {
         $this->table = $table;
         $this->pdo = $pdo;
     }
 
-    public function insert(array $columns, array $values): int {
-        try {
-            $columns = implode(', ', $columns);
-            $placeholders = rtrim(str_repeat('?, ', count($values)), ', ');
-            $stmt = $this->pdo->prepare("INSERT INTO $this->table ($columns) VALUES ($placeholders)");
-            $stmt->execute($values);
-            return (int) $this->pdo->lastInsertId();
-        } catch (PDOException $e) {
-            error_log("Error inserting record: " . $e->getMessage());
-            throw new Exception("Error inserting record: " . $e->getMessage());
+/**
+ * Inserts multiple rows into the database table.
+ * @method insert
+ * @param array $columns              An array containing the column names.
+ * @param array $multipleArrayOfValues An array of arrays, where each inner array represents
+ *                                    the values for a single row to be inserted.
+ * @return int                        The last inserted ID.
+ * @throws Exception                  If an error occurs during the insertion process.
+ */
+    public function insert(array $columns, array $multipleArrayOfValues): int {
+      try {
+        // Count the number of columns
+        $columnCount = count($columns);
+        
+        // Convert column names into a comma-separated string
+        $columns = implode(', ', $columns);
+        
+        // Generate placeholders for the values in each row
+        $placeholders = rtrim(str_repeat('(' . rtrim(str_repeat('?, ', $columnCount), ', ') . '), ', count($multipleArrayOfValues)), ', ');
+        
+        // Flatten the array of arrays into a single array of values
+        $flattenedValues = [];
+        foreach ($multipleArrayOfValues as $values) {
+            $flattenedValues = array_merge($flattenedValues, $values);
         }
+
+        // Prepare and execute the INSERT INTO statement
+        $stmt = $this->pdo->prepare("INSERT INTO $this->table ($columns) VALUES $placeholders");
+        $stmt->execute($flattenedValues);
+        
+        // Retrieve the last inserted ID
+        $index = $this->pdo->lastInsertId();
+        
+        // Check if the last inserted ID is valid
+        if ($index === false) {
+            throw new Exception('Error inserting record');
+        }
+        
+        // Return the last inserted ID
+        return (int) $index;
+      } catch (PDOException $e) {
+        // Log and rethrow any caught PDO exceptions
+        error_log("Error inserting record: " . $e->getMessage());
+        throw new Exception("Error inserting record: " . $e->getMessage());
+      }
     }
 
+    // Function to insert a record into a table
     public function select(
         array $selectColumns = [],
         array $whereColumns = [],
@@ -149,6 +173,7 @@ class Model {
         }
     }
 
+    // Function to update records in a table
     public function update(
         array $updateColumns,
         array $updateValues,
@@ -164,7 +189,11 @@ class Model {
             // prepare and execute the query
             $stmt = $this->pdo->prepare("UPDATE $this->table SET $updateColumnsWithPlaceholders $whereQuery");
             $stmt->execute($params);
-            return $stmt->rowCount();
+            $noOfRowsAffected = $stmt->rowCount();
+            if($noOfRowsAffected == 0) {
+                throw new Exception('Error updating record');
+            }
+            return (int) $noOfRowsAffected;
         }
         catch (PDOException $e) {
             error_log("Error updating record: " . $e->getMessage());
@@ -172,6 +201,7 @@ class Model {
         }
     }
 
+    // Function to delete records from a table
     public function delete(array $whereColumns = [], array $whereValues = []): int {
       try {
         $whereColumnsWithPlaceholders = empty($whereColumns) ? '' : implode(' = ? AND ', $whereColumns) . ' = ?';
@@ -180,7 +210,11 @@ class Model {
         // prepare and execute the query
         $stmt = $this->pdo->prepare("DELETE FROM $this->table $whereQuery");
         $stmt->execute($whereValues);
-        return $stmt->rowCount();
+        $noOfRowsAffected = $stmt->rowCount();
+        if($noOfRowsAffected == 0) {
+            throw new Exception('Error deleting record');
+        }
+        return (int) $noOfRowsAffected;
       }
       catch (PDOException $e) {
         error_log("Error deleting record: " . $e->getMessage());
@@ -201,6 +235,86 @@ class Model {
             unset($excluded[$fieldName]);
         }
         return $excluded;
+    }
+
+    // Function to check if a row exists in a table based on given column-value pairs
+    public function checkARowExistsByColumns(array $columns, array $values) {
+        if(count($columns) !== count($values)) {
+            throw new Exception("Number of columns does not match number of values");
+        }
+
+        $query = "SELECT COUNT(*) FROM $this->table WHERE ";
+        foreach ($columns as $column) {
+            $query .= "$column = ? AND ";
+        }
+        $query = rtrim($query, "AND ");
+
+        $statement = $this->pdo->prepare($query);
+
+        // Bind values
+        for ($i = 0; $i < count($values); $i++) {
+            $statement->bindValue($i + 1, $values[$i]);
+        }
+
+        $statement->execute();
+        $count = $statement->fetchColumn();
+
+        return $count > 0;
+    }
+
+    // Function to get distinct values for given columns from a table
+    public function getDistinctValues(array $columns) {
+        $query = "SELECT DISTINCT ";
+        foreach ($columns as $column) {
+            $query .= "$column, ";
+        }
+        $query = rtrim($query, ", ");
+        $query .= " FROM $this->table";
+
+        $statement = $this->pdo->query($query);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Function to get a page of records from a table with offset and limit
+    public function getPage($offset, $limit) {
+        $query = "SELECT * FROM $this->table LIMIT $offset, $limit";
+
+        $statement = $this->pdo->query($query);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Function to get the total number of rows in a table
+    public function getNoOfRows() {
+        $query = "SELECT COUNT(*) FROM $this->table";
+
+        $statement = $this->pdo->query($query);
+
+        return $statement->fetchColumn();
+    }
+
+    // Function to get the total number of rows in a table based on given column-value pairs
+    public function getNoOfRowsByColumns(array $columns, array $values) {
+        if(count($columns) !== count($values)) {
+            throw new Exception("Number of columns does not match number of values");
+        }
+
+        $query = "SELECT COUNT(*) FROM $this->table WHERE ";
+        foreach ($columns as $column) {
+            $query .= "$column = ? AND ";
+        }
+        $query = rtrim($query, "AND ");
+
+        $statement = $this->pdo->prepare($query);
+
+        // Bind values
+        for ($i = 0; $i < count($values); $i++) {
+            $statement->bindValue($i + 1, $values[$i]);
+        }
+
+        $statement->execute();
+        return $statement->fetchColumn();
     }
     
 }
